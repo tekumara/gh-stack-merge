@@ -38,7 +38,18 @@ JSON
     exit 1
     ;;
   "stack merge 2 --yes --squash") echo 'Added #2 to the merge queue for main' ;;
-  "stack merge 3 --yes --squash") ;;
+  "stack merge 3 --yes --squash")
+    count_file="$CALL_LOG.merge3"
+    count=$(cat "$count_file" 2>/dev/null || echo 0)
+    count=$((count + 1))
+    echo "$count" > "$count_file"
+    if [ "$count" -eq 1 ]; then
+      echo "merge failed: Required workflow 'Dependency Check' is not satisfied" >&2
+      echo "Stack merges are atomic, so nothing was merged." >&2
+      exit 1
+    fi
+    ;;
+  "pr checks 3 --json bucket") echo '[{"bucket":"pending"}]' ;;
   "pr view 2 --json state --jq .state"|"pr view 3 --json state --jq .state") echo MERGED ;;
   *) echo "unexpected gh command: $*" >&2; exit 1 ;;
 esac
@@ -54,7 +65,7 @@ esac
 		t.Fatalf("gh stack-merge: %v\n%s", err, output)
 	}
 
-	wantOutput := "PR #2: checking required checks\nPR #2: merging\nPR #2: queued\nPR #2: merged\nPR #3: checking required checks\nPR #3: merging\nPR #3: merged\nMerged 2 pull requests.\n"
+	wantOutput := "PR #2: checking required checks\nPR #2: merging\nPR #2: queued\nPR #2: merged\nPR #3: checking required checks\nPR #3: merging\nPR #3: waiting for required workflows\nPR #3: merged\nMerged 2 pull requests.\n"
 	if string(output) != wantOutput {
 		t.Errorf("output:\n%s\nwant:\n%s", output, wantOutput)
 	}
@@ -72,6 +83,10 @@ esac
 		"stack merge 2 --yes --squash",
 		"pr view 2 --json state --jq .state",
 		"pr checks 3 --required --json bucket",
+		"api repos/{owner}/{repo}/stacks/3 --silent",
+		"api repos/{owner}/{repo}/stacks?pull_request=3",
+		"stack merge 3 --yes --squash",
+		"pr checks 3 --json bucket",
 		"api repos/{owner}/{repo}/stacks/3 --silent",
 		"api repos/{owner}/{repo}/stacks?pull_request=3",
 		"stack merge 3 --yes --squash",

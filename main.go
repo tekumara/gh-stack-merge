@@ -115,6 +115,63 @@ func validateStack(pr int, expected []int) error {
 	return nil
 }
 
+func checksFailed(pr int) (bool, error) {
+	args := []string{"pr", "checks", fmt.Sprint(pr), "--json", "bucket"}
+	output, commandErr := exec.Command("gh", args...).CombinedOutput()
+	var checks []struct {
+		Bucket string `json:"bucket"`
+	}
+	if err := json.Unmarshal(output, &checks); err != nil {
+		if strings.Contains(string(output), "no checks reported") {
+			return false, nil
+		}
+		return false, fmt.Errorf("gh %s: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
+	}
+	for _, check := range checks {
+		if check.Bucket == "fail" || check.Bucket == "cancel" {
+			return true, nil
+		}
+	}
+	if commandErr != nil {
+		if exit, ok := commandErr.(*exec.ExitError); !ok || (exit.ExitCode() != 1 && exit.ExitCode() != 8) {
+			return false, fmt.Errorf("gh %s: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
+		}
+	}
+	return false, nil
+}
+
+func mergePR(pr int, method string, expected []int) ([]byte, error) {
+	args := []string{"stack", "merge", fmt.Sprint(pr), "--yes", method}
+	waiting := false
+	for {
+		if err := validateStack(pr, expected); err != nil {
+			return nil, err
+		}
+		output, err := exec.Command("gh", args...).CombinedOutput()
+		if err == nil {
+			return output, nil
+		}
+		message := string(output)
+		if !strings.Contains(message, "Required workflow") ||
+			!strings.Contains(message, "is not satisfied") ||
+			!strings.Contains(message, "Stack merges are atomic, so nothing was merged.") {
+			return nil, fmt.Errorf("gh %s: %s", strings.Join(args, " "), strings.TrimSpace(message))
+		}
+		failed, err := checksFailed(pr)
+		if err != nil {
+			return nil, err
+		}
+		if failed {
+			return nil, fmt.Errorf("PR #%d has failed checks", pr)
+		}
+		if !waiting {
+			fmt.Printf("PR #%d: waiting for required workflows\n", pr)
+			waiting = true
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
 func run(args []string) error {
 	flags := flag.NewFlagSet("gh stack-merge", flag.ContinueOnError)
 	squash := flags.Bool("squash", false, "squash and merge")
@@ -183,11 +240,8 @@ func run(args []string) error {
 			if err := waitForChecks(pr); err != nil {
 				return err
 			}
-			if err := validateStack(pr, snapshot[:seen]); err != nil {
-				return err
-			}
 			fmt.Printf("PR #%d: merging\n", pr)
-			output, err := gh("stack", "merge", fmt.Sprint(pr), "--yes", method)
+			output, err := mergePR(pr, method, snapshot[:seen])
 			if err != nil {
 				return err
 			}
