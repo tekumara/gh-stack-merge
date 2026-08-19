@@ -1,6 +1,8 @@
 # gh-stack-merge
 
-Merge each pull request in a GitHub stack one at a time, from bottom to top. The command waits for required checks and GitHub's merge queue before it continues.
+Merge each pull request in a GitHub stack one at a time, from bottom to top. Use this as a workaround when the GitHub UI cannot merge the whole stack. GitHub recommends merging one pull request at a time while it fixes the underlying stack merge issues. See [GitHub's stacked pull request discussion](https://github.com/github/gh-stack/discussions/212).
+
+The command waits for required checks and GitHub's merge queue before it continues.
 
 ## Install
 
@@ -13,7 +15,7 @@ gh extension install tekumara/gh-stack-merge
 
 ## Use
 
-Check out any branch in the stack, then run:
+Run the command from the local repository that contains your stack. It only operates on the current stack in the current directory. Check out any branch in that stack, then run:
 
 ```sh
 gh stack-merge
