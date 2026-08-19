@@ -152,8 +152,9 @@ func mergePR(pr int, method string, expected []int) ([]byte, error) {
 			return output, nil
 		}
 		message := string(output)
+		workflowPending := strings.Contains(message, "is not satisfied") || strings.Contains(message, "is still running")
 		if !strings.Contains(message, "Required workflow") ||
-			!strings.Contains(message, "is not satisfied") ||
+			!workflowPending ||
 			!strings.Contains(message, "Stack merges are atomic, so nothing was merged.") {
 			return nil, fmt.Errorf("gh %s: %s", strings.Join(args, " "), strings.TrimSpace(message))
 		}

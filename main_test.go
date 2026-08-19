@@ -48,6 +48,11 @@ JSON
       echo "Stack merges are atomic, so nothing was merged." >&2
       exit 1
     fi
+    if [ "$count" -eq 2 ]; then
+      echo "merge failed: Required workflow 'Dependency Check' is still running" >&2
+      echo "Stack merges are atomic, so nothing was merged." >&2
+      exit 1
+    fi
     ;;
   "pr checks 3 --json bucket") echo '[{"bucket":"pending"}]' ;;
   "pr view 2 --json state --jq .state"|"pr view 3 --json state --jq .state") echo MERGED ;;
@@ -83,6 +88,10 @@ esac
 		"stack merge 2 --yes --squash",
 		"pr view 2 --json state --jq .state",
 		"pr checks 3 --required --json bucket",
+		"api repos/{owner}/{repo}/stacks/3 --silent",
+		"api repos/{owner}/{repo}/stacks?pull_request=3",
+		"stack merge 3 --yes --squash",
+		"pr checks 3 --json bucket",
 		"api repos/{owner}/{repo}/stacks/3 --silent",
 		"api repos/{owner}/{repo}/stacks?pull_request=3",
 		"stack merge 3 --yes --squash",
