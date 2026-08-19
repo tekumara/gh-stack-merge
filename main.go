@@ -51,7 +51,7 @@ func waitForChecks(pr int) error {
 			_, err := gh("pr", "checks", fmt.Sprint(pr), "--required", "--watch", "--fail-fast", "--interval", "10")
 			return err
 		}
-		if strings.Contains(stderr.String(), "no required checks reported") {
+		if strings.Contains(stderr.String(), "no required checks reported") || strings.Contains(stderr.String(), "no checks reported") {
 			return nil
 		}
 		message := strings.TrimSpace(stdout.String() + "\n" + stderr.String())

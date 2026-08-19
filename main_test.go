@@ -34,7 +34,7 @@ JSON
   "pr checks 2 --required --json bucket") exit 8 ;;
   "pr checks 2 --required --watch --fail-fast --interval 10") ;;
   "pr checks 3 --required --json bucket")
-    echo "no required checks reported" >&2
+    echo "no checks reported on the branch" >&2
     exit 1
     ;;
   "stack merge 2 --yes --squash") echo 'Added #2 to the merge queue for main' ;;
