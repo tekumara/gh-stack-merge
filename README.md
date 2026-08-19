@@ -29,6 +29,27 @@ gh stack-merge --rebase
 gh stack-merge --squash
 ```
 
+Example run:
+
+```console
+$ gh stack-merge --squash
+
+PR #293: checking required checks
+PR #293: merging
+PR #293: merged
+PR #294: checking required checks
+PR #294: merging
+PR #294: waiting for required workflows
+PR #294: merged
+PR #295: checking required checks
+PR #295: merging
+PR #295: waiting for required workflows
+PR #295: merged
+PR #296: checking required checks
+PR #296: merging
+PR #296: waiting for required workflows
+```
+
 The command snapshots the current stack when it starts. It skips merged pull requests and resumes queued ones. It stops if checks fail, GitHub rejects a merge, or a pull request closes without merging.
 
 Press Ctrl-C to stop waiting. This does not cancel work already queued on GitHub. Run the command again to resume from the first unmerged pull request.
